@@ -39,7 +39,7 @@
     <ol>
       <li>Open this page in <b>Safari</b> on the iPhone and tap <b>Install</b>, then <b>Install</b> again.</li>
       <li>Wait for the icon on the Home Screen to finish loading.</li>
-      <li id="devmode" hidden>Development build, first launch on iOS 16+: Settings › Privacy &amp; Security › <b>Developer Mode</b> › On, restart, confirm.</li>
+      <li id="devmode" hidden>First launch, one time per iPhone (iOS 16+): Settings › Privacy &amp; Security › <b>Developer Mode</b> › On, restart, then tap <b>Turn On</b>. Later builds won't ask again.</li>
     </ol>
     <p class="note">"Unable to install" means this iPhone is not registered for this build. Send your device UDID to the iOS developer.</p>
   </div>
@@ -63,9 +63,10 @@
     var qr = (rel.assets || []).filter(function (a) { return a.name === "qr.png"; })[0];
     if (qr) document.getElementById("qrimg").src = qr.browser_download_url;
     // Release body carries "Profile: `name` (<kind>, N devices, ...)" written by deliver_ipa.py.
-    // Developer Mode is only needed for development-signed builds, never Ad Hoc / enterprise.
+    // iOS 16+ requires Developer Mode for development AND ad hoc builds; only enterprise
+    // (and App Store / TestFlight, never served here) is exempt.
     var kind = ((rel.body || "").match(/\((development|ad-hoc|enterprise),/) || [])[1];
-    if (kind === "development") document.getElementById("devmode").hidden = false;
+    if (kind && kind !== "enterprise") document.getElementById("devmode").hidden = false;
     var m = (rel.body || "").split("### What's new")[1];
     if (m) { document.getElementById("notesH").hidden = false; document.getElementById("notes").textContent = m.trim(); }
   }).catch(function (e) {
