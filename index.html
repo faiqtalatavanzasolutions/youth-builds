@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install Test Build</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#ffffff; --text:#14171f; --muted:#5b6475; --accent:#0a58ca; --on-accent:#ffffff; --line:#e3e6eb; --warn:#8a5a00; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0f1115; --card:#181b22; --text:#eef0f4; --muted:#9aa3b2; --accent:#5b9bff; --on-accent:#0f1115; --line:#2a2f3a; --warn:#f0b54a; }
+  }
+  :root[data-theme="dark"] { --bg:#0f1115; --card:#181b22; --text:#eef0f4; --muted:#9aa3b2; --accent:#5b9bff; --on-accent:#0f1115; --line:#2a2f3a; --warn:#f0b54a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width:480px; margin:0 auto; padding:32px 16px 48px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:14px; margin:0 0 20px; }
+  .btn { display:block; text-align:center; background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600; padding:14px; border-radius:12px; }
+  .qr { display:none; text-align:center; margin-top:8px; }
+  .qr img { width:220px; height:220px; border-radius:8px; }
+  h2 { font-size:15px; margin:24px 0 8px; }
+  pre { white-space:pre-wrap; font:inherit; margin:0; color:var(--muted); }
+  ol { padding-left:20px; margin:0; color:var(--muted); font-size:14px; }
+  .note { color:var(--warn); font-size:14px; margin-top:16px; }
+  .err { color:var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1 id="title">Loading build…</h1>
+    <p class="meta" id="meta"></p>
+    <a class="btn" id="install" href="#">Install on this iPhone</a>
+    <div class="qr" id="qr"><p class="meta">Not on an iPhone? Scan this with the iPhone camera:</p><img id="qrimg" alt="QR code to this install page"></div>
+    <h2 id="notesH" hidden>What's new</h2>
+    <pre id="notes"></pre>
+    <h2>Steps</h2>
+    <ol>
+      <li>Open this page in <b>Safari</b> on the iPhone and tap <b>Install</b>, then <b>Install</b> again.</li>
+      <li>Wait for the icon on the Home Screen to finish loading.</li>
+      <li>First launch on iOS 16+: Settings › Privacy &amp; Security › <b>Developer Mode</b> › On, restart, confirm.</li>
+    </ol>
+    <p class="note">"Unable to install" means this iPhone is not registered for this build. Send your device UDID to the iOS developer.</p>
+  </div>
+</main>
+<script>
+(function () {
+  var REPO = "faiqtalatavanzasolutions/youth-builds";
+  var tag = new URLSearchParams(location.search).get("tag");
+  var api = "https://api.github.com/repos/" + REPO + "/releases/" + (tag ? "tags/" + encodeURIComponent(tag) : "latest");
+  var isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function itms(t) {
+    var m = "https://github.com/" + REPO + "/releases/download/" + encodeURIComponent(t) + "/manifest.plist";
+    return "itms-services://?action=download-manifest&url=" + encodeURIComponent(m);
+  }
+  if (!isiOS) document.getElementById("qr").style.display = "block";
+  fetch(api).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (rel) {
+    document.title = rel.name || rel.tag_name;
+    document.getElementById("title").textContent = rel.name || rel.tag_name;
+    document.getElementById("meta").textContent = "Build " + rel.tag_name + " · " + new Date(rel.published_at).toLocaleString();
+    document.getElementById("install").href = itms(rel.tag_name);
+    var qr = (rel.assets || []).filter(function (a) { return a.name === "qr.png"; })[0];
+    if (qr) document.getElementById("qrimg").src = qr.browser_download_url;
+    var m = (rel.body || "").split("### What's new")[1];
+    if (m) { document.getElementById("notesH").hidden = false; document.getElementById("notes").textContent = m.trim(); }
+  }).catch(function (e) {
+    var t = document.getElementById("title");
+    t.textContent = tag ? "Build " + tag + " not found" : "No build published yet";
+    t.className = "err";
+    if (tag) document.getElementById("install").href = itms(tag);
+  });
+})();
+</script>
+</body>
+</html>
